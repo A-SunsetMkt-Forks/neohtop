@@ -54,10 +54,12 @@ jobs:
           deb [arch=amd64] http://security.ubuntu.com/ubuntu $UBUNTU_CODENAME-security main restricted universe multiverse
           EOF
 
-          # Add ARM64 sources using ports repository only
+          # Add ARM64 sources using ports repository ONLY (including security)
+          # Based on https://discourse.ubuntu.com/t/http-404-when-attempting-to-fetch-arm64-packages-on-24-04-1/53243
           sudo tee /etc/apt/sources.list.d/arm64-sources.list << EOF
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $UBUNTU_CODENAME main restricted universe multiverse
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $UBUNTU_CODENAME-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $UBUNTU_CODENAME-backports main restricted universe multiverse
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $UBUNTU_CODENAME-security main restricted universe multiverse
           EOF
 
