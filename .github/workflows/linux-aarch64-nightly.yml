@@ -86,7 +86,7 @@ jobs:
 
       - name: Add Ubuntu Jammy repo for WebKitGTK 4.0
         run: |
-          echo "deb [arch=amd64,arm64] http://archive.ubuntu.com/ubuntu jammy main universe" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu jammy main universe" | sudo tee -a /etc/apt/sources.list
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main universe" | sudo tee -a /etc/apt/sources.list.d/arm64-ports.list
           sudo apt-get update
 
