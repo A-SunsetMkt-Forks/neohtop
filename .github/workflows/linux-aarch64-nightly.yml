@@ -43,16 +43,16 @@ jobs:
           # Backup original sources
           sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
 
-          # Create a clean sources.list with only amd64 architecture
+          # Remove ALL existing source configurations to avoid conflicts
+          sudo rm -f /etc/apt/sources.list.d/*.list || true
+
+          # Create a completely clean sources.list with only amd64 architecture
           sudo tee /etc/apt/sources.list << EOF
           deb [arch=amd64] http://azure.archive.ubuntu.com/ubuntu $UBUNTU_CODENAME main restricted universe multiverse
           deb [arch=amd64] http://azure.archive.ubuntu.com/ubuntu $UBUNTU_CODENAME-updates main restricted universe multiverse
           deb [arch=amd64] http://azure.archive.ubuntu.com/ubuntu $UBUNTU_CODENAME-backports main restricted universe multiverse
           deb [arch=amd64] http://security.ubuntu.com/ubuntu $UBUNTU_CODENAME-security main restricted universe multiverse
           EOF
-
-          # Remove any existing arm64 source configurations that might conflict
-          sudo rm -f /etc/apt/sources.list.d/*arm64* || true
 
           # Add ARM64 sources using ports repository only
           sudo tee /etc/apt/sources.list.d/arm64-sources.list << EOF
@@ -61,6 +61,9 @@ jobs:
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $UBUNTU_CODENAME-security main restricted universe multiverse
           EOF
 
+          # Clear apt cache and update
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
           sudo apt-get update
 
           # Install required packages including cross-compilation tools and arm64 libraries
