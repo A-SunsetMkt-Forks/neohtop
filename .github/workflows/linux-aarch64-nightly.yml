@@ -32,6 +32,11 @@ jobs:
         with:
           targets: aarch64-unknown-linux-gnu
 
+      - name: Fix apt sources to jammy only
+        run: |
+          sudo sed -i 's/noble/jammy/g' /etc/apt/sources.list
+          sudo rm -f /etc/apt/sources.list.d/*.list
+
       - name: Enable multiarch and add ARM64 ports repo
         run: |
           sudo dpkg --add-architecture arm64
