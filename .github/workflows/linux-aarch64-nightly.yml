@@ -34,19 +34,22 @@ jobs:
 
       - name: Configure ARM64 repositories and Install Dependencies
         run: |
+          # Get the Ubuntu codename dynamically
+          UBUNTU_CODENAME=$(lsb_release -cs)
+          echo "Detected Ubuntu codename: $UBUNTU_CODENAME"
+
           sudo dpkg --add-architecture arm64
 
-          # Add ARM64 sources to a new file, preserving existing amd64 sources
+          # Add ARM64 sources using the correct Ubuntu version
           sudo tee /etc/apt/sources.list.d/arm64-sources.list << EOF
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $UBUNTU_CODENAME main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $UBUNTU_CODENAME-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $UBUNTU_CODENAME-security main restricted universe multiverse
           EOF
 
           sudo apt-get update
 
           # Install required packages including cross-compilation tools and arm64 libraries
-          # Combine installations from your original two apt-get install steps
           sudo apt-get install -y \
             build-essential \
             pkg-config \
@@ -68,7 +71,7 @@ jobs:
             libfuse2 \
             qemu-user-static
 
-          # Configure pkg-config for cross-compilation (this part seems okay)
+          # Configure pkg-config for cross-compilation
           echo "PKG_CONFIG=/usr/bin/aarch64-linux-gnu-pkg-config" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
 
