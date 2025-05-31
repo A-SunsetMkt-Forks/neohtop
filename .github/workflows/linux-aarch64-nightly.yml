@@ -32,21 +32,21 @@ jobs:
         with:
           targets: aarch64-unknown-linux-gnu
 
-      - name: Fix apt sources to jammy only
-        run: |
-          sudo sed -i 's/noble/jammy/g' /etc/apt/sources.list
-          sudo rm -f /etc/apt/sources.list.d/*.list
-
-      - name: Enable multiarch and add ARM64 ports repo
+- name: Configure ARM64 repositories and Install Dependencies
         run: |
           sudo dpkg --add-architecture arm64
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse" | sudo tee /etc/apt/sources.list.d/arm64-ports.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm64-ports.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/arm64-ports.list
+
+          # Add ARM64 sources to a new file, preserving existing amd64 sources
+          sudo tee /etc/apt/sources.list.d/arm64-sources.list << EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse
+          EOF
+
           sudo apt-get update
 
-      - name: Install cross-compilation dependencies
-        run: |
+          # Install required packages including cross-compilation tools and arm64 libraries
+          # Combine installations from your original two apt-get install steps
           sudo apt-get install -y \
             build-essential \
             pkg-config \
@@ -68,17 +68,35 @@ jobs:
             libfuse2 \
             qemu-user-static
 
-      - name: Setup pkg-config for cross compilation
+          # Configure pkg-config for cross-compilation (this part seems okay)
+          echo "PKG_CONFIG=/usr/bin/aarch64-linux-gnu-pkg-config" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Setup cross-compilation environment
         run: |
-          sudo tee /usr/bin/aarch64-linux-gnu-pkg-config > /dev/null << 'EOF'
+          sudo apt-get install -y \
+            crossbuild-essential-arm64 \
+            pkg-config \
+            libssl-dev:arm64 \
+            libssl-dev \
+            openssl:arm64 \
+            file \
+            desktop-file-utils \
+            libfuse2 \
+            qemu-user-static
+
+          # Setup pkg-config
+          sudo tee /usr/bin/aarch64-linux-gnu-pkg-config << 'EOF'
           #!/bin/sh
           export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
           exec pkg-config "$@"
           EOF
           sudo chmod +x /usr/bin/aarch64-linux-gnu-pkg-config
 
-      - name: Setup .cargo config and environment variables
-        run: |
+          # Create .cargo/config
           mkdir -p .cargo
           cat > .cargo/config << EOF
           [target.aarch64-unknown-linux-gnu]
@@ -86,10 +104,12 @@ jobs:
           ar = "aarch64-linux-gnu-ar"
           EOF
 
+          # Download and setup appimagetool for ARM64
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage
           chmod +x appimagetool-aarch64.AppImage
           sudo mv appimagetool-aarch64.AppImage /usr/local/bin/appimagetool
 
+          # Set environment variables
           echo "PKG_CONFIG=/usr/bin/aarch64-linux-gnu-pkg-config" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
           echo "OPENSSL_DIR=/usr" >> $GITHUB_ENV
@@ -97,9 +117,6 @@ jobs:
           echo "OPENSSL_LIB_DIR=/usr/lib/aarch64-linux-gnu" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
           echo "APPIMAGE_EXTRACT_AND_RUN=1" >> $GITHUB_ENV
-
-      - name: Install Dependencies
-        run: npm install
 
       - name: Build Frontend
         run: npm run build
